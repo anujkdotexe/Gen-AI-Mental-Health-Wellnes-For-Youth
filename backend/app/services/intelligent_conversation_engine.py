@@ -496,44 +496,87 @@ class IntelligentConversationEngine:
         return EmotionalTone.SERIOUS
 
     def _identify_conversation_context(self, message: str, intelligence: ConversationIntelligence) -> ConversationContext:
-        """Intelligently identify conversation context"""
+        """Advanced context identification using semantic understanding"""
         message_lower = message.lower().strip()
         
         # Crisis context - highest priority
         if intelligence.crisis_indicators:
             return ConversationContext.CRISIS_INTERVENTION
         
-        # Greeting context - early in conversation with greeting words
-        if intelligence.message_count <= 3 and any(word in message_lower for word in ['hi', 'hello', 'hey', 'good morning', 'good evening', 'what\'s up']):
+        # Greeting context - handle greetings more intelligently
+        greeting_words = ['hi', 'hello', 'hey', 'hie', 'good morning', 'good evening', 'what\'s up', 'sup', 'yo']
+        if (intelligence.message_count <= 3 and 
+            any(word in message_lower for word in greeting_words) and 
+            len(message.strip()) < 20):
             return ConversationContext.GREETING
         
-        # Simple casual context - short messages, questions about previous conversation, basic responses
-        if (len(message.strip()) < 15 or 
-            any(phrase in message_lower for phrase in ['what did i say', 'what did i just say', 'how are you', 'nothing much', 'not much', 'just thinking']) or
-            (message.strip().count(' ') < 3 and '?' in message)):
-            return ConversationContext.CASUAL_CHAT
+        # Work/professional stress context - expanded detection
+        work_indicators = ['work', 'job', 'office', 'boss', 'coworker', 'colleague', 'meeting', 'deadline', 
+                          'project', 'client', 'supervisor', 'manager', 'workplace', 'professional', 'career',
+                          'interview', 'promotion', 'salary', 'overtime', 'corporate', 'business']
+        stress_indicators = ['stressful', 'stress', 'fight', 'argument', 'conflict', 'difficult', 'problem',
+                           'issue', 'trouble', 'challenging', 'overwhelming', 'frustrated', 'annoying',
+                           'exhausted', 'tired', 'burnout']
         
-        # Academic stress context
-        if any(word in message_lower for word in ['school', 'exam', 'test', 'homework', 'grade', 'study', 'college', 'university', 'assignment', 'project']):
-            return ConversationContext.ACADEMIC_STRESS
-        
-        # Social issues context
-        if any(word in message_lower for word in ['friend', 'relationship', 'social', 'lonely', 'connect', 'dating', 'breakup', 'crush']):
-            return ConversationContext.SOCIAL_ISSUES
-        
-        # Celebration context
-        if any(word in message_lower for word in ['happy', 'excited', 'great', 'amazing', 'celebration', 'success', 'achieved', 'won', 'passed']):
-            return ConversationContext.CELEBRATION
-        
-        # Goal setting context
-        if any(word in message_lower for word in ['goal', 'plan', 'want to', 'hope to', 'trying to', 'working on', 'motivation', 'achieve']):
-            return ConversationContext.GOAL_SETTING
-        
-        # Emotional support context - only for explicit emotional language
-        if any(word in message_lower for word in ['feel', 'feeling', 'emotion', 'sad', 'anxious', 'worried', 'stressed', 'overwhelmed', 'depressed', 'upset']):
+        if (any(word in message_lower for word in work_indicators) or
+            (any(word in message_lower for word in stress_indicators) and 
+             any(word in message_lower for word in ['day', 'today', 'yesterday']))):
             return ConversationContext.EMOTIONAL_SUPPORT
         
-        # Default to casual chat for unrecognized patterns
+        # Social/relationship context - enhanced detection
+        social_indicators = ['friend', 'relationship', 'boyfriend', 'girlfriend', 'partner', 'dating', 'crush',
+                           'family', 'parent', 'sibling', 'roommate', 'neighbor', 'social', 'party',
+                           'hang out', 'hangout', 'text', 'call', 'chat', 'talk', 'conversation']
+        
+        if any(word in message_lower for word in social_indicators):
+            return ConversationContext.SOCIAL_ISSUES
+        
+        # Academic context
+        academic_indicators = ['school', 'exam', 'test', 'homework', 'grade', 'study', 'college', 'university',
+                             'assignment', 'project', 'class', 'teacher', 'professor', 'student', 'semester']
+        
+        if any(word in message_lower for word in academic_indicators):
+            return ConversationContext.ACADEMIC_STRESS
+        
+        # Emotional expression context - more nuanced detection
+        emotion_indicators = ['feel', 'feeling', 'felt', 'emotion', 'mood', 'sad', 'happy', 'angry', 'mad',
+                            'anxious', 'worried', 'nervous', 'excited', 'disappointed', 'frustrated',
+                            'overwhelmed', 'confused', 'lost', 'stuck', 'hurt', 'pain', 'upset']
+        
+        if any(word in message_lower for word in emotion_indicators):
+            return ConversationContext.EMOTIONAL_SUPPORT
+        
+        # Casual responses context - better detection
+        casual_indicators = ['nothing much', 'not much', 'just', 'only', 'kinda', 'sort of', 'i guess',
+                           'maybe', 'whatever', 'meh', 'okay', 'fine', 'alright']
+        
+        short_responses = ['yeah', 'yes', 'no', 'nah', 'sure', 'ok', 'k', 'hmm', 'oh', 'ah', 'um']
+        
+        if (len(message.strip()) < 30 and 
+            (any(phrase in message_lower for phrase in casual_indicators) or
+             any(word == message_lower.strip() for word in short_responses) or
+             message.strip().count(' ') < 4)):
+            return ConversationContext.CASUAL_CHAT
+        
+        # Question context - handle questions intelligently
+        if '?' in message and len(message.strip()) < 100:
+            return ConversationContext.CASUAL_CHAT
+        
+        # Goal/aspiration context
+        goal_indicators = ['want to', 'trying to', 'working on', 'goal', 'plan', 'hope', 'wish', 'dream',
+                         'aspire', 'achieve', 'accomplish', 'improve', 'better', 'change', 'start']
+        
+        if any(phrase in message_lower for phrase in goal_indicators):
+            return ConversationContext.GOAL_SETTING
+        
+        # Celebration context
+        positive_indicators = ['great', 'amazing', 'awesome', 'fantastic', 'wonderful', 'excellent',
+                             'good news', 'success', 'win', 'won', 'passed', 'got', 'achieved']
+        
+        if any(phrase in message_lower for phrase in positive_indicators):
+            return ConversationContext.CELEBRATION
+        
+        # Default to casual chat - but make it intelligent
         return ConversationContext.CASUAL_CHAT
 
     async def _generate_response_components(self, message: str, intelligence: ConversationIntelligence, 
@@ -564,14 +607,34 @@ class IntelligentConversationEngine:
 
     def _generate_intelligent_opening(self, message: str, personality_blend: Dict[PersonalityMode, float], 
                                     emotional_tone: EmotionalTone, context: ConversationContext) -> str:
-        """Generate intelligent opening based on context and personality"""
+        """Generate natural, context-aware openings that avoid repetitive phrases"""
         
         # Get dominant personality mode
         dominant_mode = max(personality_blend.items(), key=lambda x: x[1])[0]
+        message_lower = message.lower().strip()
         
         # Crisis openings - always prioritize safety
         if context == ConversationContext.CRISIS_INTERVENTION:
             return "I can hear how much pain you're in right now, and I'm genuinely concerned about you."
+        
+        # Greeting context - don't use formal openings
+        if context == ConversationContext.GREETING:
+            return ""  # No opening needed for greetings
+        
+        # Casual chat context - minimal or no opening
+        if context == ConversationContext.CASUAL_CHAT:
+            if len(message.strip()) < 15:
+                return ""  # Very casual, no formal opening
+            return ""  # Let the core response handle it naturally
+        
+        # Work/emotional support context - natural acknowledgment
+        if context == ConversationContext.EMOTIONAL_SUPPORT:
+            if any(word in message_lower for word in ["work", "job", "stressful"]):
+                return ""  # Let emotional core handle work stress naturally
+            elif any(word in message_lower for word in ["fight", "argument"]):
+                return ""  # Let the response be direct
+            else:
+                return ""  # Avoid generic therapeutic openings
         
         # Celebratory openings
         if context == ConversationContext.CELEBRATION:
@@ -596,17 +659,10 @@ class IntelligentConversationEngine:
             elif dominant_mode == PersonalityMode.SOCIAL_NAVIGATOR:
                 return "Relationship dynamics can be really tricky to navigate."
             else:
-                return "I can hear how much this social situation is affecting you."
+                return ""  # Let core response handle it naturally
         
-        # Emotional support openings
-        if context == ConversationContext.EMOTIONAL_SUPPORT:
-            if emotional_tone == EmotionalTone.COMPASSIONATE:
-                return f"I can really sense the {self._extract_primary_emotion(message)} in what you're sharing."
-            else:
-                return "Thank you for trusting me with what you're feeling right now."
-        
-        # Default empathetic opening
-        return "I appreciate you sharing this with me."
+        # For most contexts, skip formal openings and go straight to natural responses
+        return ""
 
     def _generate_intelligent_core(self, message: str, intelligence: ConversationIntelligence, 
                                  personality_blend: Dict[PersonalityMode, float], context: ConversationContext) -> str:
@@ -701,16 +757,20 @@ class IntelligentConversationEngine:
                                       emotional_tone: EmotionalTone, emotional_calibration: Optional[Any] = None) -> str:
         """Construct final intelligent response from components"""
         
-        # Get response parts
-        opening = components["opening"]
-        core_response = components["core_response"]
-        support = components["support"]
-        momentum = components["forward_momentum"]
+        # Get response parts and filter out empty ones
+        opening = components["opening"].strip()
+        core_response = components["core_response"].strip()
+        support = components["support"].strip()
+        momentum = components["forward_momentum"].strip()
+        
+        # Helper function to join non-empty parts
+        def join_parts(*parts):
+            return " ".join(part for part in parts if part)
         
         # Construct based on emotional tone and personality
         if emotional_tone == EmotionalTone.PROTECTIVE:
             # Crisis response - clear and supportive
-            return f"{opening} {core_response} {support} {momentum}"
+            return join_parts(opening, core_response, support, momentum)
         
         elif emotional_tone == EmotionalTone.PLAYFUL:
             # Playful response - conversational and engaging
@@ -718,15 +778,15 @@ class IntelligentConversationEngine:
             if support and "honestly" not in support:
                 response_parts.append(support)
             response_parts.append(momentum)
-            return " ".join(response_parts)
+            return join_parts(*response_parts)
         
         elif emotional_tone == EmotionalTone.COMPASSIONATE:
             # Compassionate response - gentle and validating
-            return f"{opening} {support} {core_response} {momentum}"
+            return join_parts(opening, support, core_response, momentum)
         
         else:
-            # Standard response construction
-            return f"{opening} {core_response} {momentum}"
+            # Standard response construction - core response is most important
+            return join_parts(opening, core_response, momentum)
 
     # Helper methods for intelligent analysis
     def _extract_emotional_trajectory(self, message: str, history: List[Dict]) -> List[float]:
@@ -1031,9 +1091,49 @@ class IntelligentConversationEngine:
             return "Relationship challenges can be really emotionally draining, and your feelings about this situation make complete sense."
 
     def _generate_emotional_core_response(self, message: str, intelligence: ConversationIntelligence, personality_blend: Dict[PersonalityMode, float]) -> str:
-        """Generate emotional support core response"""
-        emotion = self._extract_primary_emotion(message)
+        """Generate empathetic and natural emotional support responses"""
+        message_lower = message.lower().strip()
+        dominant_mode = max(personality_blend.items(), key=lambda x: x[1])[0]
         
+        # Work stress responses
+        if any(word in message_lower for word in ["work", "job", "coworker", "boss", "office"]):
+            if "stressful" in message_lower or "stress" in message_lower:
+                return "Work stress can really take it out of you. What's been the most challenging part of your day?"
+            elif "fight" in message_lower or "argument" in message_lower:
+                return "Workplace conflicts are so draining! Those situations can really stick with you. What happened?"
+            else:
+                return "Work stuff can be really tough to deal with. What's going on?"
+        
+        # General stress and overwhelm
+        if any(word in message_lower for word in ["stressed", "overwhelmed", "exhausted", "tired"]):
+            return "That sounds really tough. When you're feeling like this, what usually helps you feel a bit better?"
+        
+        # Sadness and emotional pain
+        if any(word in message_lower for word in ["sad", "hurt", "pain", "upset", "crying"]):
+            return "I can hear that you're really hurting right now. Do you want to talk about what's been weighing on you?"
+        
+        # Anxiety and worry
+        if any(word in message_lower for word in ["anxious", "worried", "nervous", "panic"]):
+            return "Anxiety can feel so overwhelming. What's been on your mind that's causing these feelings?"
+        
+        # Anger and frustration
+        if any(word in message_lower for word in ["angry", "mad", "frustrated", "annoyed", "pissed"]):
+            return "It sounds like you're really frustrated about something. What's been getting under your skin?"
+        
+        # Confusion and feeling lost
+        if any(word in message_lower for word in ["confused", "lost", "stuck", "don't know"]):
+            return "Feeling uncertain can be really uncomfortable. What's been on your mind that's got you feeling this way?"
+        
+        # Relationship issues
+        if any(word in message_lower for word in ["relationship", "boyfriend", "girlfriend", "friend", "family"]):
+            return "Relationship stuff can be so complex and emotionally draining. What's been happening?"
+        
+        # General emotional expression
+        if any(word in message_lower for word in ["feel", "feeling", "emotion"]):
+            return "Thanks for sharing how you're feeling. It takes courage to open up. What's been going through your mind?"
+        
+        # Default empathetic response based on extracted emotion
+        emotion = self._extract_primary_emotion(message)
         if emotion == "anxiety":
             return "Anxiety has this way of making everything feel urgent and overwhelming, but we can work together to help you feel more grounded."
         elif emotion == "sadness":
@@ -1041,7 +1141,7 @@ class IntelligentConversationEngine:
         elif emotion == "anger":
             return "That frustration is completely understandable - anger often shows us what we care about and what matters to us."
         else:
-            return "Emotions can be so complex and sometimes contradictory. What you're feeling is valid and important."
+            return "It sounds like you're going through something difficult. I'm here to listen - what's been on your mind?"
 
     def _generate_celebration_core_response(self, message: str, intelligence: ConversationIntelligence, personality_blend: Dict[PersonalityMode, float]) -> str:
         """Generate celebration core response"""
@@ -1079,36 +1179,69 @@ class IntelligentConversationEngine:
             return "Hi there! I'm MindSpark, and I'm here to chat about whatever's on your mind. What brings you here today?"
 
     def _generate_casual_core_response(self, message: str, intelligence: ConversationIntelligence, personality_blend: Dict[PersonalityMode, float]) -> str:
-        """Generate natural casual conversation response"""
+        """Generate intelligent casual conversation responses"""
         message_lower = message.lower().strip()
         dominant_mode = max(personality_blend.items(), key=lambda x: x[1])[0]
         
-        # Handle specific casual messages
-        if any(phrase in message_lower for phrase in ["what did i say", "what did i just say", "what was that"]):
-            return "You just said \"" + message + "\" - is there something specific about that you'd like to explore?"
+        # Handle "nothing much" responses with follow-up questions
+        if any(phrase in message_lower for phrase in ["nothing much", "not much", "just chilling", "not a lot"]):
+            follow_ups = [
+                "Fair enough! Sometimes the quiet moments are nice. Anything on your mind though?",
+                "Sounds peaceful! How's your day been overall?",
+                "I hear you. Just one of those regular days?",
+                "Got it. Anything you've been thinking about lately?"
+            ]
+            return random.choice(follow_ups)
+        
+        # Handle work-related stress
+        if any(word in message_lower for word in ["work", "job", "stressful day"]):
+            return "Ugh, work stress is the worst! What made today particularly rough?"
+        
+        # Handle fight/conflict mentions
+        if any(word in message_lower for word in ["fight", "argument", "conflict"]):
+            if "coworker" in message_lower or "colleague" in message_lower:
+                return "Oh no, workplace conflicts are so draining! Want to talk about what the fight was about? Sometimes it helps to get it off your chest."
+            elif "friend" in message_lower:
+                return "Friend fights hit different - they're so emotionally exhausting. What happened?"
+            else:
+                return "Arguments are never fun. What was this one about?"
+        
+        # Handle specific casual questions
+        if any(phrase in message_lower for phrase in ["what did i say", "what did i just say"]):
+            return f"You said \"{message}\" - anything specific about that you want to talk through?"
         
         if any(phrase in message_lower for phrase in ["how are you", "how's it going", "what's up"]):
+            responses = [
+                "I'm doing well, thanks for asking! More importantly, how are YOU doing?",
+                "I'm good! What's going on with you today?",
+                "All good here! How's your day treating you?"
+            ]
+            return random.choice(responses)
+        
+        # Handle short responses (yeah, okay, sure, etc.)
+        short_responses = ["yeah", "yes", "okay", "ok", "sure", "fine", "alright", "meh", "whatever"]
+        if message_lower.strip() in short_responses:
+            return "I'm sensing there might be more to that. Want to share what's really going on?"
+        
+        # Handle general casual conversation
+        if len(message.strip()) < 20:
             if dominant_mode == PersonalityMode.WITTY_COMPANION:
-                return "I'm doing great, thanks for asking! More importantly though, how are YOU doing?"
+                return "Hmm, you're being mysterious! What's brewing in that head of yours?"
             else:
-                return "I'm well, thank you! I'm curious to hear how you're doing today."
+                return "I'd love to hear more. What's on your mind?"
         
-        if any(phrase in message_lower for phrase in ["nothing much", "not much", "just thinking", "just here"]):
-            return "Sometimes the quiet moments are when our minds are actually the most active. Anything particular you're thinking about?"
-        
+        # Handle questions
         if "?" in message:
-            # It's a question - be curious and helpful
-            return "That's an interesting question! Let me think about that with you. What got you wondering about this?"
+            return "That's a good question! Let me think about that with you. What got you wondering about this?"
         
-        # For very short messages or unclear context
-        if len(message.strip()) < 10:
-            if dominant_mode == PersonalityMode.WITTY_COMPANION:
-                return "I'm picking up some mysterious vibes here! Want to fill me in on what's going through your head?"
-            else:
-                return "I'd love to hear more about what you're thinking. Can you tell me a bit more?"
-        
-        # Default casual response
-        return "That's interesting! Tell me more about what's on your mind."
+        # Default intelligent casual response
+        responses = [
+            "That's interesting! Tell me more about that.",
+            "I'm curious to hear more about this. What's the story?",
+            "Sounds like there's more to unpack here. Want to dive in?",
+            "I'm listening. What else is going on with this?"
+        ]
+        return random.choice(responses)
 
     def _generate_goal_setting_core_response(self, message: str, intelligence: ConversationIntelligence, personality_blend: Dict[PersonalityMode, float]) -> str:
         """Generate goal setting core response"""
