@@ -167,11 +167,37 @@ async def send_message(
         # Update conversation timestamp
         conversation.updated_at = datetime.utcnow()
         
-        # If first real conversation message, update title
+        # Generate intelligent conversation title if this is the first real message
         if len(conversation_history) <= 1:  # Only welcome message exists
-            # Generate a title from the first user message
-            title_words = user_content.split()[:5]
-            conversation.title = " ".join(title_words) + ("..." if len(title_words) == 5 else "")
+            try:
+                from app.services.intelligent_conversation_engine import intelligent_conversation_engine
+                # Identify context and generate appropriate title
+                intelligence = intelligent_conversation_engine._analyze_conversation_intelligence(user_content, conversation_history, {})
+                context = intelligent_conversation_engine._identify_conversation_context(user_content, intelligence)
+                conversation.title = intelligent_conversation_engine.generate_conversation_title(user_content, context, conversation_history)
+            except Exception as e:
+                # Fallback to simple title generation
+                title_words = user_content.split()[:5]
+                conversation.title = " ".join(title_words) + ("..." if len(title_words) == 5 else "")
+        
+        # Update title dynamically if conversation topic shifts significantly (every 3-5 messages)
+        elif len(conversation_history) % 4 == 0 and len(conversation_history) >= 4:
+            try:
+                from app.services.intelligent_conversation_engine import intelligent_conversation_engine
+                # Re-analyze conversation context based on recent messages
+                intelligence = intelligent_conversation_engine._analyze_conversation_intelligence(user_content, conversation_history, {})
+                context = intelligent_conversation_engine._identify_conversation_context(user_content, intelligence)
+                new_title = intelligent_conversation_engine.generate_conversation_title(user_content, context, conversation_history)
+                
+                # Only update if the new title is meaningfully different
+                if (new_title != conversation.title and 
+                    len(new_title) > 10 and
+                    "Casual Conversation" not in new_title and
+                    "Personal Chat Session" not in new_title):
+                    conversation.title = new_title
+            except Exception as e:
+                # Don't change title if there's an error
+                pass
         
         db.commit()
         

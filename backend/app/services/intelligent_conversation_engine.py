@@ -1250,9 +1250,128 @@ class IntelligentConversationEngine:
         if dominant_mode == PersonalityMode.MOTIVATIONAL_COACH:
             return "I love that you're thinking about goals! Having direction gives us purpose and momentum."
         elif dominant_mode == PersonalityMode.WITTY_COMPANION:
-            return "Goal setting, huh? I like where your head's at - planning mode activated!"
+            return "Goal setting, huh! I like where your head's at - planning mode activated!"
         else:
             return "It's really great that you're thinking about what you want to work towards. Goals can be such powerful motivators."
+
+    def generate_conversation_title(self, user_message: str, context: ConversationContext, conversation_history: Optional[List[Dict]] = None) -> str:
+        """Generate intelligent, contextual conversation titles"""
+        message_lower = user_message.lower().strip()
+        
+        # Handle different conversation contexts
+        if context == ConversationContext.CRISIS_INTERVENTION:
+            return "Crisis Support Session"
+        
+        elif context == ConversationContext.EMOTIONAL_SUPPORT:
+            # Work-related emotional support
+            if any(word in message_lower for word in ["work", "job", "coworker", "boss", "office"]):
+                if any(word in message_lower for word in ["fight", "argument", "conflict"]):
+                    return "Workplace Conflict Discussion"
+                elif any(word in message_lower for word in ["stress", "stressful", "pressure", "overwhelmed"]):
+                    return "Work Stress Support"
+                elif any(word in message_lower for word in ["promotion", "interview", "meeting", "deadline"]):
+                    return "Career Challenges Chat"
+                else:
+                    return "Work Life Discussion"
+            
+            # Relationship-related emotional support
+            elif any(word in message_lower for word in ["relationship", "boyfriend", "girlfriend", "partner", "dating"]):
+                if any(word in message_lower for word in ["fight", "argument", "breakup", "break up"]):
+                    return "Relationship Troubles"
+                else:
+                    return "Relationship Discussion"
+            
+            elif any(word in message_lower for word in ["friend", "friendship"]):
+                if any(word in message_lower for word in ["fight", "argument", "conflict"]):
+                    return "Friend Conflict Support"
+                else:
+                    return "Friendship Chat"
+            
+            elif any(word in message_lower for word in ["family", "parent", "mom", "dad", "sibling"]):
+                return "Family Matters Discussion"
+            
+            # Specific emotions
+            elif any(word in message_lower for word in ["anxious", "anxiety", "worried", "panic"]):
+                return "Anxiety Support Session"
+            elif any(word in message_lower for word in ["sad", "depressed", "depression", "down"]):
+                return "Mental Health Support"
+            elif any(word in message_lower for word in ["angry", "mad", "frustrated", "annoyed"]):
+                return "Managing Frustration"
+            elif any(word in message_lower for word in ["lonely", "alone", "isolated"]):
+                return "Loneliness Support"
+            else:
+                return "Emotional Support Chat"
+        
+        elif context == ConversationContext.ACADEMIC_STRESS:
+            if any(word in message_lower for word in ["exam", "test", "quiz"]):
+                return "Exam Stress Discussion"
+            elif any(word in message_lower for word in ["homework", "assignment", "project"]):
+                return "Academic Workload Chat"
+            elif any(word in message_lower for word in ["grade", "grades", "gpa"]):
+                return "Academic Performance Talk"
+            else:
+                return "School Stress Support"
+        
+        elif context == ConversationContext.SOCIAL_ISSUES:
+            if any(word in message_lower for word in ["party", "social", "hang out", "hangout"]):
+                return "Social Life Discussion"
+            elif any(word in message_lower for word in ["dating", "crush", "like someone"]):
+                return "Dating and Relationships"
+            else:
+                return "Social Challenges Chat"
+        
+        elif context == ConversationContext.GOAL_SETTING:
+            if any(word in message_lower for word in ["career", "job", "professional"]):
+                return "Career Goals Planning"
+            elif any(word in message_lower for word in ["health", "fitness", "exercise"]):
+                return "Health Goals Discussion"
+            elif any(word in message_lower for word in ["study", "learn", "education"]):
+                return "Learning Goals Chat"
+            else:
+                return "Personal Goals Session"
+        
+        elif context == ConversationContext.CELEBRATION:
+            if any(word in message_lower for word in ["job", "work", "promotion", "hired"]):
+                return "Career Success Celebration"
+            elif any(word in message_lower for word in ["exam", "test", "grade", "passed"]):
+                return "Academic Achievement"
+            elif any(word in message_lower for word in ["relationship", "dating", "engagement"]):
+                return "Relationship Milestone"
+            else:
+                return "Success Celebration"
+        
+        elif context == ConversationContext.GREETING:
+            return "Getting to Know You"
+        
+        elif context == ConversationContext.CASUAL_CHAT:
+            # Try to extract meaningful topic from casual conversation
+            if any(word in message_lower for word in ["day", "today", "yesterday"]):
+                return "Daily Life Chat"
+            elif any(word in message_lower for word in ["weekend", "plans", "doing"]):
+                return "Life Updates"
+            elif "?" in user_message:
+                return "Questions and Curiosity"
+            elif any(word in message_lower for word in ["thinking", "wondering", "mind"]):
+                return "Thoughts and Reflections"
+            else:
+                return "Casual Conversation"
+        
+        # Fallback: Create title from key meaningful words
+        meaningful_words = []
+        skip_words = {'i', 'me', 'my', 'am', 'is', 'are', 'was', 'were', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'the', 'a', 'an', 'and', 'or', 'but', 'so', 'if', 'when', 'where', 'why', 'how', 'what', 'who', 'that', 'this', 'these', 'those', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'}
+        
+        words = user_message.split()[:8]  # First 8 words max
+        for word in words:
+            clean_word = re.sub(r'[^\w]', '', word.lower())
+            if clean_word and clean_word not in skip_words and len(clean_word) > 2:
+                meaningful_words.append(word.capitalize())
+        
+        if meaningful_words:
+            title = " ".join(meaningful_words[:4])  # Max 4 meaningful words
+            return title if len(title) <= 30 else title[:27] + "..."
+        
+        # Ultimate fallback
+        return "Personal Chat Session"
 
 # Export the intelligent engine
 intelligent_conversation_engine = IntelligentConversationEngine()
