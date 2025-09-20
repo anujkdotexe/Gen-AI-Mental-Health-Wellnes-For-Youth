@@ -6,6 +6,7 @@ import type { RootState } from '../store/store';
 const Journal: React.FC = () => {
   const dispatch = useAppDispatch();
   const { entries, isLoading, error } = useAppSelector((state: RootState) => state.journal);
+  const { isAuthenticated, user } = useAppSelector((state: RootState) => state.auth);
   const [showNewEntry, setShowNewEntry] = useState(false);
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -55,11 +56,57 @@ const Journal: React.FC = () => {
     return matchesSearch;
   });
 
+  // Check if user needs to login to access journaling
+  const needsLogin = !isAuthenticated || user?.is_anonymous;
+
+  if (needsLogin) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex items-center space-x-3">
+            <h1 className="text-3xl font-bold text-gray-900">📖 Journal</h1>
+            <span className="text-sm text-green-600 font-medium">(Free to use)</span>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-8 text-center">
+          <div className="text-6xl mb-4">🔒</div>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+            Login Required for Journaling
+          </h2>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            Please log in to access your personal journal. Your entries are private, secure, and completely free to use.
+          </p>
+          <div className="space-y-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <p className="text-green-700 font-medium">✨ Journaling is completely free!</p>
+              <p className="text-green-600 text-sm mt-1">
+                Create an account to start tracking your thoughts, moods, and personal growth.
+              </p>
+            </div>
+            <button
+              onClick={() => window.location.href = '/auth'}
+              className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium"
+            >
+              Login to Start Journaling
+            </button>
+          </div>
+          <div className="mt-6 text-sm text-gray-500">
+            <p>🔐 Your journal entries are private and encrypted</p>
+            <p>📊 Track your mood patterns over time</p>
+            <p>🧠 AI-powered insights to support your mental wellness</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center space-x-3">
           <h1 className="text-3xl font-bold text-gray-900">📖 Journal</h1>
+          <span className="text-sm text-green-600 font-medium">(Free to use)</span>
         </div>
         <button
           onClick={() => setShowNewEntry(true)}
